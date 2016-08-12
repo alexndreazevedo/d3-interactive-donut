@@ -9,6 +9,8 @@ const svg = d3.select('body')
   .append('g')
 
 svg.append('g')
+  .attr('class', 'title');
+svg.append('g')
   .attr('class', 'slices');
 svg.append('g')
   .attr('class', 'labels');
@@ -40,7 +42,7 @@ const data = [{
     color: '#edc8a3',
     selected: false,
   }, {
-    label: 'Dolor sit',
+    label: 'Dolor',
     color: '#8d9697',
     selected: false,
   }, {
@@ -52,7 +54,7 @@ const data = [{
     color: '#bdc3c3',
     selected: false,
   }, {
-    label: 'Elit',
+    label: 'Sit elit',
     color: '#d5d9da',
     selected: false,
   }, {
@@ -67,34 +69,51 @@ const color = d3.scale.ordinal()
 
 const calculateAngle = (d) => d.startAngle + (d.endAngle - d.startAngle) / 2;
 
+const createElement = (name, attrs = {}, value = []) => {
+  let element = document.createElementNS(d3.ns.prefix.svg, name);
+
+  for (let attr in attrs) {
+    element.setAttribute(attr, attrs[attr]);
+  }
+
+  if(Array.isArray(value)) {
+    for (let child of value) {
+      element.appendChild(child);
+    }
+  } else {
+    element.innerHTML = value || '';
+  }
+
+  return element;
+};
+
+const createLabelsStructure = (name, amount, percent, color) => {
+
+  const groupPercent =
+    createElement('g', { 'class': 'group-percent' }, [
+      createElement('rect', { 'class': 'background', 'fill': color }),
+      createElement('text', { 'class': 'percent', 'x': 34, 'dy': '1.4em' }, `${percent}%`)
+    ]);
+
+  const groupName =
+    createElement('g', { 'class': 'group-name' }, [
+      createElement('text', { 'class': 'name', 'dy': '.3em' }, name),
+      createElement('text', { 'class': 'amount', 'dy': '.3em', 'y': 18 }, amount)
+    ]);
+
+  return createElement('g', { class: 'tick' }, [groupPercent, groupName]);
+};
+
+const createTitleStructure = (name, amount, percent, color) => {
+
+};
+
 const createTitle = () => {
 
   const title = svg.select('.title');
 
   title.enter()
-    .insert('path')
-    .style('fill', (d) => color(d.data.color))
-    .attr('class', 'slice')
-    .on('click', function() {
-
-      d3.select(this)
-        .transition().duration(animation)
-        .attrTween('d', function (d) {
-          this._current = this._current || d;
-
-          const interpolate = d3.interpolate(this._current, d);
-
-          this._current = interpolate(0);
-
-          d.data.selected = !d.data.selected;
-
-          if(d.data.selected) {
-            return (t) => selectedArc(interpolate(t));
-          } else {
-            return (t) => arc(interpolate(t));
-          }
-        });
-    });
+    .append();
 
   slice
     .transition().duration(animation)
@@ -117,7 +136,7 @@ const createTitle = () => {
     .remove();
 };
 
-const createSlice = (data) => {
+const createSlices = (data) => {
 
   const slice = svg.select('.slices').selectAll('path.slice')
     .data(pie(data), key);
@@ -168,49 +187,12 @@ const createSlice = (data) => {
     .remove();
 };
 
-const createStructure = (name, amount, percent, color) => {
-
-  const createElement = (name, attrs = {}, value) => {
-    let element = document.createElementNS(d3.ns.prefix.svg, name);
-
-    element.innerHTML = value || '';
-
-    for (let attr in attrs) {
-      element.setAttribute(attr, attrs[attr]);
-    }
-
-    return element;
-  }
-
-  const block = createElement('g', { class: 'tick' });
-
-  const groupPercent = createElement('g', { 'class': 'group-percent' });
-  const groupName = createElement('g', { 'class': 'group-name' });
-
-  const rectBackground = createElement('rect', { 'class': 'background', 'fill': color });
-  const textPercent = createElement('text', { 'class': 'percent', 'x': 34, 'dy': '1.4em' }, `${percent}%`);
-
-  const textName = createElement('text', { 'class': 'name', 'dy': '.3em' }, name);
-  const textAmount = createElement('text', { 'class': 'amount', 'dy': '.3em', 'y': 18 }, amount);
-
-  groupPercent.appendChild(rectBackground);
-  groupPercent.appendChild(textPercent);
-
-  groupName.appendChild(textName);
-  groupName.appendChild(textAmount);
-
-  block.appendChild(groupPercent);
-  block.appendChild(groupName);
-
-  return block;
-};
-
 const createLabels = (data) => {
   const text = svg.select('.labels').selectAll('g.tick')
     .data(pie(data), key);
 
   text.enter()
-    .append((d) => createStructure(d.data.label, '2.1M', d.data.value, d.data.color));
+    .append((d) => createLabelsStructure(d.data.label, d.data.value, d.data.value, d.data.color));
 
   text
     .transition().duration(animation)
@@ -242,10 +224,26 @@ const createLabels = (data) => {
       this._current = interpolate(0);
 
       return (t) => calculateAngle(interpolate(t)) < Math.PI ? 'tick text-start' : 'tick text-end';
-    });
+    })
+    .tween('text', function (d) {
 
-  text.select('text.percent')
-    .text((d) => d.data.percent.toFixed() + '%');
+      this._current = this._current || d;
+
+      const interpolate = d3.interpolate(this._current, d);
+
+      this._current = interpolate(0);
+
+      return function(t) {
+
+        let i = interpolate(t);
+
+        d3.select(this).select('text.amount')
+          .text(i.data.value.toFixed(1) + 'M');
+
+        d3.select(this).select('text.percent')
+          .text(i.data.percent.toFixed(1) + '%');
+      };
+    });
 
   text.exit()
     .remove();
@@ -290,7 +288,8 @@ const change = () => {
 
   let _data = data.map((item) => {
 
-    const value = Math.random();
+    const value = Number.parseFloat((Math.random() * 1000).toFixed(2));
+
     total += value;
 
     return Object.assign({}, item, {
@@ -302,7 +301,7 @@ const change = () => {
     percent: item.value / (total / 100)
   }));
 
-  createSlice(_data);
+  createSlices(_data);
   createLabels(_data);
   createPolylines(_data);
 
@@ -322,4 +321,4 @@ setInterval(() => {
   if (randomize) {
     change()
   }
-}, animation);
+}, animation * 1.5);
