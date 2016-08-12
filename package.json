@@ -1,0 +1,16 @@
+{
+  "name": "d3-interactive-donut",
+  "version": "0.0.1",
+  "description": "",
+  "main": "",
+  "scripts": {
+    "start": "http-server app -o"
+  },
+  "repository": "",
+  "keywords": [],
+  "author": "",
+  "devDependencies": {},
+  "dependencies": {
+    "http-server": "^0.9.0"
+  }
+}
