@@ -8,18 +8,11 @@ const svg = d3.select('body')
     .attr('viewBox', [0, 0, width, height].join(' '))
   .append('g')
 
-svg.append('g')
-  .attr('class', 'title');
-svg.append('g')
-  .attr('class', 'slices');
-svg.append('g')
-  .attr('class', 'labels');
-svg.append('g')
-  .attr('class', 'lines');
-
 const pie = d3.layout.pie()
   .sort(null)
   .value((d) => d.value);
+
+const key = (d) => d.data.label;
 
 const arc = d3.svg.arc()
   .outerRadius(radius * 0.8)
@@ -32,10 +25,6 @@ const selectedArc = d3.svg.arc()
 const outerArc = d3.svg.arc()
   .innerRadius(radius * 0.9)
   .outerRadius(radius * 0.85);
-
-svg.attr('transform', `translate(${width / 2}, ${height / 2})`);
-
-const key = (d) => d.data.label;
 
 const data = [{
     label: 'Lorem ipsum',
@@ -92,48 +81,23 @@ const createLabelsStructure = (name, amount, percent, color) => {
   const groupPercent =
     createElement('g', { 'class': 'group-percent' }, [
       createElement('rect', { 'class': 'background', 'fill': color }),
-      createElement('text', { 'class': 'percent', 'x': 34, 'dy': '1.4em' }, `${percent}%`)
+      createElement('text', { 'class': 'percent', 'x': 34, 'dy': '1.4em' }, `${percent}%`),
     ]);
 
   const groupName =
     createElement('g', { 'class': 'group-name' }, [
       createElement('text', { 'class': 'name', 'dy': '.3em' }, name),
-      createElement('text', { 'class': 'amount', 'dy': '.3em', 'y': 18 }, amount)
+      createElement('text', { 'class': 'amount', 'dy': '.3em', 'y': 18 }, amount),
     ]);
 
   return createElement('g', { class: 'tick' }, [groupPercent, groupName]);
 };
 
-const createTitleStructure = (name, amount, percent, color) => {
-
-};
-
-const createTitle = () => {
-
-  const title = svg.select('.title');
-
-  title.enter()
-    .append();
-
-  slice
-    .transition().duration(animation)
-    .attrTween('d', function (d) {
-
-      this._current = this._current || d;
-
-      const interpolate = d3.interpolate(this._current, d);
-
-      this._current = interpolate(0);
-
-      if(d.data.selected) {
-        return (t) => selectedArc(interpolate(t));
-      } else {
-        return (t) => arc(interpolate(t));
-      }
-    });
-
-  slice.exit()
-    .remove();
+const createTitleStructure = (amount, percent) => {
+  return createElement('g', { 'class': 'title' }, [
+    createElement('text', { 'class': 'total-amount', 'x': 34, 'dy': '1.4em' }, amount),
+    createElement('text', { 'class': 'total-percent', 'x': 34, 'dy': '1.4em' }, percent),
+  ]);
 };
 
 const createSlices = (data) => {
@@ -187,7 +151,8 @@ const createSlices = (data) => {
     .remove();
 };
 
-const createLabels = (data) => {
+const createLabels = (data, amount, percent) => {
+
   const text = svg.select('.labels').selectAll('g.tick')
     .data(pie(data), key);
 
@@ -227,6 +192,9 @@ const createLabels = (data) => {
     })
     .tween('text', function (d) {
 
+      d.amount = amount;
+      d.percent = percent;
+
       this._current = this._current || d;
 
       const interpolate = d3.interpolate(this._current, d);
@@ -236,6 +204,12 @@ const createLabels = (data) => {
       return function(t) {
 
         let i = interpolate(t);
+
+        d3.select('text.total-amount')
+          .text(i.amount.toFixed(1) + 'M');
+
+        d3.select('text.total-percent')
+          .text(i.percent.toFixed(1) + '%');
 
         d3.select(this).select('text.amount')
           .text(i.data.value.toFixed(1) + 'M');
@@ -282,6 +256,22 @@ const createPolylines = (data) => {
     .remove();
 };
 
+const build = () => {
+
+  svg.append('g')
+    .attr('class', 'slices');
+
+  svg.append('g')
+    .attr('class', 'labels');
+
+  svg.append('g')
+    .attr('class', 'lines');
+
+  svg.attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+  svg.append((d) => createTitleStructure(0, 0));
+};
+
 const change = () => {
 
   let total = 0;
@@ -302,10 +292,12 @@ const change = () => {
   }));
 
   createSlices(_data);
-  createLabels(_data);
+  createLabels(_data, total, (total / 100) * Math.random());
   createPolylines(_data);
 
 };
+
+build();
 
 let randomize = true;
 

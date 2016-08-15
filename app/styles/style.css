@@ -24,6 +24,24 @@ polyline {
   fill: none;
 }
 
+g.title {
+  transform: translate(-34px, -40px);
+}
+
+g.title text {
+  text-anchor: middle;
+}
+
+g.title text.total-amount {
+  font-size: 32px;
+}
+
+g.title text.total-percent {
+  font-size: 18px;
+  transform: translate(0, 45px);
+  fill: #aab0b1;
+}
+
 g.group-percent rect.background {
   width: 64px;
   height: 32px;
@@ -35,10 +53,6 @@ g.group-percent text.percent {
   text-anchor: middle;
   font-weight: 600;
   font-size: 15px;
-}
-
-g.group-name text.name {
-
 }
 
 g.group-name text.amount {
