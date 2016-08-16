@@ -27,34 +27,53 @@ const outerArc = d3.svg.arc()
   .outerRadius(radius * 0.85);
 
 const data = [{
-    label: 'Lorem ipsum',
-    color: '#edc8a3',
+    label: 'Stocks',
+    value: 335.6,
+    percent: 44,
     selected: false,
   }, {
-    label: 'Dolor',
-    color: '#8d9697',
+    label: 'Property',
+    value: 33,
+    percent: 9,
     selected: false,
   }, {
-    label: 'Consectetur',
-    color: '#a5adad',
+    label: 'Liquidity',
+    value: 64.4,
+    percent: 8,
     selected: false,
   }, {
-    label: 'Ddipisicing',
-    color: '#bdc3c3',
+    label: 'Derivatives',
+    value: 108,
+    percent: 14,
     selected: false,
   }, {
-    label: 'Sit elit',
-    color: '#d5d9da',
+    label: 'Comodities',
+    value: 15.1,
+    percent: 2,
     selected: false,
   }, {
-    label: 'Incididunt',
-    color: '#edf0f0',
+    label: 'Fixed Income',
+    value: 166.8,
+    percent: 22,
+    selected: false,
+  }, {
+    label: 'Other',
+    value: 3.5,
+    percent: 1,
     selected: false,
   }];
 
 const color = d3.scale.ordinal()
   .domain(data.map((item) => item.label))
-  .range(data.map((item) => item.color));
+  .range([
+    '#edc8a3',
+    '#edf0f0',
+    '#bdc3c3',
+    '#8d9697',
+    '#d5d9da',
+    '#e3e5e5',
+    '#a5adad',
+  ]);
 
 const calculateAngle = (d) => d.startAngle + (d.endAngle - d.startAngle) / 2;
 
@@ -107,7 +126,7 @@ const createSlices = (data) => {
 
   slice.enter()
     .insert('path')
-    .style('fill', (d) => color(d.data.color))
+    .style('fill', (d, i) => color(i))
     .attr('class', 'slice')
     .on('click', function() {
 
@@ -157,7 +176,7 @@ const createLabels = (data, amount, percent) => {
     .data(pie(data), key);
 
   text.enter()
-    .append((d) => createLabelsStructure(d.data.label, d.data.value, d.data.value, d.data.color));
+    .append((d, i) => createLabelsStructure(d.data.label, d.data.value, d.data.value, color(i)));
 
   text
     .transition().duration(animation)
@@ -230,7 +249,7 @@ const createPolylines = (data) => {
 
   polyline.enter()
     .append('polyline')
-    .attr('stroke', (d) => d.data.color);
+    .attr('stroke', (d, i) => color(i));
 
   polyline.transition().duration(animation)
     .attrTween('points', function (d) {
@@ -270,6 +289,8 @@ const build = () => {
   svg.attr('transform', `translate(${width / 2}, ${height / 2})`);
 
   svg.append((d) => createTitleStructure(0, 0));
+
+  change();
 };
 
 const change = () => {
@@ -278,18 +299,10 @@ const change = () => {
 
   let _data = data.map((item) => {
 
-    const value = Number.parseFloat((Math.random() * 1000).toFixed(2));
+    total += item.value;
 
-    total += value;
-
-    return Object.assign({}, item, {
-      value
-    });
+    return item;
   });
-
-  _data = _data.map((item) => Object.assign({}, item, {
-    percent: item.value / (total / 100)
-  }));
 
   createSlices(_data);
   createLabels(_data, total, (total / 100) * Math.random());
@@ -298,19 +311,3 @@ const change = () => {
 };
 
 build();
-
-let randomize = true;
-
-d3.select('.run').on('click', () => {
-  randomize = true;
-});
-
-d3.select('.stop').on('click', () => {
-  randomize = false;
-});
-
-setInterval(() => {
-  if (randomize) {
-    change()
-  }
-}, animation * 1.5);
