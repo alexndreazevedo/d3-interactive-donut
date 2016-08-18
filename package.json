@@ -1,14 +1,20 @@
 {
   "name": "d3-interactive-donut",
   "version": "0.0.1",
-  "description": "",
+  "description": "Animated donut chart using D3",
   "main": "",
   "scripts": {
     "start": "http-server app -o"
   },
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexndreazevedo/d3-interactive-donut.git"
+  },
   "keywords": [],
-  "author": "",
+  "author": [
+    "Alexandre Azevedo <alexndreazevedo@gmail.com>"
+  ],
+  "license": "MIT",
   "devDependencies": {},
   "dependencies": {
     "http-server": "^0.9.0"

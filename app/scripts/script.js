@@ -8,21 +8,21 @@ const svg = d3.select('body')
     .attr('viewBox', [0, 0, width, height].join(' '))
   .append('g')
 
-const pie = d3.layout.pie()
+const pie = d3.pie()
   .sort(null)
   .value((d) => d.value);
 
 const key = (d) => d.data.label;
 
-const arc = d3.svg.arc()
+const arc = d3.arc()
   .outerRadius(radius * 0.8)
   .innerRadius(radius * 0.5);
 
-const selectedArc = d3.svg.arc()
+const selectedArc = d3.arc()
   .outerRadius(radius * 0.85)
   .innerRadius(radius * 0.55);
 
-const outerArc = d3.svg.arc()
+const outerArc = d3.arc()
   .innerRadius(radius * 0.9)
   .outerRadius(radius * 0.85);
 
@@ -63,7 +63,7 @@ const data = [{
     selected: false,
   }];
 
-const color = d3.scale.ordinal()
+const color = d3.scaleOrdinal()
   .domain(data.map((item) => item.label))
   .range([
     '#edc8a3',
@@ -78,7 +78,7 @@ const color = d3.scale.ordinal()
 const calculateAngle = (d) => d.startAngle + (d.endAngle - d.startAngle) / 2;
 
 const createElement = (name, attrs = {}, value = []) => {
-  let element = document.createElementNS(d3.ns.prefix.svg, name);
+  let element = document.createElementNS(d3.namespaces.svg, name);
 
   for (let attr in attrs) {
     element.setAttribute(attr, attrs[attr]);
@@ -113,7 +113,7 @@ const createLabelsStructure = (name, amount, percent, color) => {
 };
 
 const createTitleStructure = (amount, percent) => {
-  return createElement('g', { 'class': 'title' }, [
+  return createElement('g', { 'class': 'title', 'id': 'title' }, [
     createElement('text', { 'class': 'total-amount', 'x': 34, 'dy': '1.4em' }, amount),
     createElement('text', { 'class': 'total-percent', 'x': 34, 'dy': '1.4em' }, percent),
   ]);
@@ -128,6 +128,16 @@ const createSlices = (data) => {
     .insert('path')
     .style('fill', (d, i) => color(i))
     .attr('class', 'slice')
+    .attr('d', function (d) {
+
+      const interpolate = Object.assign({}, d, {
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      });
+
+      return arc(interpolate);
+    })
     .on('click', function() {
 
       d3.select(this)
@@ -147,17 +157,15 @@ const createSlices = (data) => {
             return (t) => arc(interpolate(t));
           }
         });
-    });
-
-  slice
+    })
     .transition().duration(animation)
     .attrTween('d', function (d) {
 
-      this._current = this._current || d;
-
-      const interpolate = d3.interpolate(this._current, d);
-
-      this._current = interpolate(0);
+      const interpolate = d3.interpolate({
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
 
       if(d.data.selected) {
         return (t) => selectedArc(interpolate(t));
@@ -176,17 +184,42 @@ const createLabels = (data, amount, percent) => {
     .data(pie(data), key);
 
   text.enter()
-    .append((d, i) => createLabelsStructure(d.data.label, d.data.value, d.data.value, color(i)));
+    .append((d, i) => createLabelsStructure(d.data.label, '0M', 0, color(i)))
+    .attr('transform', function (d) {
 
-  text
+      const interpolate = d3.interpolate({
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
+
+      this._current = interpolate(0);
+
+      const pos = outerArc.centroid(this._current);
+
+      pos[0] = radius * (calculateAngle(this._current) < Math.PI ? 1 : -1);
+
+      return `translate(${pos})`;
+
+    })
+    .attr('class', function (d) {
+
+      const interpolate = d3.interpolate({
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
+
+      return calculateAngle(interpolate(0)) < Math.PI ? 'tick text-start' : 'tick text-end';
+    })
     .transition().duration(animation)
     .attrTween('transform', function (d) {
 
-      this._current = this._current || d;
-
-      const interpolate = d3.interpolate(this._current, d);
-
-      this._current = interpolate(0);
+      const interpolate = d3.interpolate({
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
 
       return (t) => {
 
@@ -201,11 +234,11 @@ const createLabels = (data, amount, percent) => {
     })
     .attrTween('class', function (d) {
 
-      this._current = this._current || d;
-
-      const interpolate = d3.interpolate(this._current, d);
-
-      this._current = interpolate(0);
+      const interpolate = d3.interpolate({
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
 
       return (t) => calculateAngle(interpolate(t)) < Math.PI ? 'tick text-start' : 'tick text-end';
     })
@@ -214,11 +247,13 @@ const createLabels = (data, amount, percent) => {
       d.amount = amount;
       d.percent = percent;
 
-      this._current = this._current || d;
-
-      const interpolate = d3.interpolate(this._current, d);
-
-      this._current = interpolate(0);
+      const interpolate = d3.interpolate({
+        amount: 0,
+        percent: 0,
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
 
       return function(t) {
 
@@ -230,10 +265,10 @@ const createLabels = (data, amount, percent) => {
         d3.select('text.total-percent')
           .text(i.percent.toFixed(1) + '%');
 
-        d3.select(this).select('text.amount')
+        d3.select('g.tick:nth-child('+d.index+') text.amount')
           .text(i.data.value.toFixed(1) + 'M');
 
-        d3.select(this).select('text.percent')
+        d3.select('g.tick:nth-child('+d.index+') text.percent')
           .text(i.data.percent.toFixed(1) + '%');
       };
     });
@@ -249,16 +284,29 @@ const createPolylines = (data) => {
 
   polyline.enter()
     .append('polyline')
-    .attr('stroke', (d, i) => color(i));
+    .attr('stroke', (d, i) => color(i))
+    .attr('points', function (d) {
 
-  polyline.transition().duration(animation)
+      const interpolate = Object.assign({}, d, {
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      });
+
+      const pos = outerArc.centroid(interpolate);
+
+      pos[0] = radius * 1 * (calculateAngle(interpolate) < Math.PI ? 1 : -1);
+
+      return [arc.centroid(interpolate), outerArc.centroid(interpolate), pos];
+    })
+    .transition().duration(animation)
     .attrTween('points', function (d) {
 
-      this._current = this._current || d;
-
-      const interpolate = d3.interpolate(this._current, d);
-
-      this._current = interpolate(0);
+      const interpolate = d3.interpolate({
+        endAngle: 0,
+        padAngle: 0,
+        startAngle: 0
+      }, d);
 
       return (t) => {
 
