@@ -28,38 +28,38 @@ const outerArc = d3.arc()
 
 const data = [{
     label: 'Stocks',
-    value: 335.6,
-    percent: 44,
+    value: 303.2,
+    percent: 40,
     selected: false,
   }, {
     label: 'Property',
-    value: 33,
+    value: 68.22,
     percent: 9,
     selected: false,
   }, {
     label: 'Liquidity',
-    value: 64.4,
+    value: 60.64,
     percent: 8,
     selected: false,
   }, {
     label: 'Derivatives',
-    value: 108,
-    percent: 14,
+    value: 113.7,
+    percent: 15,
     selected: false,
   }, {
     label: 'Comodities',
-    value: 15.1,
+    value: 15.16,
     percent: 2,
     selected: false,
   }, {
     label: 'Fixed Income',
-    value: 166.8,
-    percent: 22,
+    value: 181.92,
+    percent: 24,
     selected: false,
   }, {
     label: 'Other',
-    value: 3.5,
-    percent: 1,
+    value: 15.16,
+    percent: 2,
     selected: false,
   }];
 
@@ -252,24 +252,30 @@ const createLabels = (data, amount, percent) => {
         percent: 0,
         endAngle: 0,
         padAngle: 0,
-        startAngle: 0
+        startAngle: 0,
+        data: {
+          percent: 0,
+          value: 0
+        }
       }, d);
 
       return function(t) {
 
         let i = interpolate(t);
 
+        const index = d.index + 1;
+
         d3.select('text.total-amount')
-          .text(i.amount.toFixed(1) + 'M');
+          .text(i.amount.toFixed() + 'M');
 
         d3.select('text.total-percent')
           .text(i.percent.toFixed(1) + '%');
 
-        d3.select('g.tick:nth-child('+d.index+') text.amount')
-          .text(i.data.value.toFixed(1) + 'M');
+        d3.select('g.tick:nth-child('+index+') text.amount')
+          .text(i.data.value.toFixed(2) + 'M');
 
-        d3.select('g.tick:nth-child('+d.index+') text.percent')
-          .text(i.data.percent.toFixed(1) + '%');
+        d3.select('g.tick:nth-child('+index+') text.percent')
+          .text(i.data.percent.toFixed() + '%');
       };
     });
 
@@ -353,7 +359,7 @@ const change = () => {
   });
 
   createSlices(_data);
-  createLabels(_data, total, (total / 100) * Math.random());
+  createLabels(_data, total, 100);
   createPolylines(_data);
 
 };
